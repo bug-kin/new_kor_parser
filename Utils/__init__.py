@@ -1,1 +1,2 @@
-from .custom_request import RequestDispatcher
+from .request_dispatcher import RequestDispatcher
+from .proxy_dispatcher import ProxyDispatcher

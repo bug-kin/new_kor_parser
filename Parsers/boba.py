@@ -53,7 +53,7 @@ class BobaParser:
         self.database = database
         self.body = None
         self.cars = []
-    
+
     async def parse(self):
         for type_ in self.TYPES:
             for body_ in self.BODY_TYPES:
@@ -63,7 +63,7 @@ class BobaParser:
                 while True:
                     if page > pages:
                         break
-                    
+
                     async with self.request_dispatcher.get(
                         self.URL.format(
                             type_=type_,
@@ -79,19 +79,19 @@ class BobaParser:
 
                             await self.parse_cars(soup.find('div', id='listCont'))
                             print()
-                
+
                     page += 1
 
-                self.database.insert_or_update_car(self.cars)
+                # self.database.insert_or_update_car(self.cars)
 
         print()
-    
+
     async def parse_cars(self, html):
         tasks = []
         for car in html.find_all('li', class_='product-item'):
             if car.find('p', class_='tit').text.strip().startswith('미니'):
                 continue
-            
+
             tasks.append(
                 asyncio.create_task(
                     self.parse_car(car)
@@ -144,7 +144,7 @@ class BobaParser:
             html.find('div', class_='mode-cell price').text
         )
         return car
-    
+
     async def extract_preview(self, string, car_dir):
         if 'cybercar' in string.lower():
             url = 'https:' + string.replace('thum5', 'img').replace('.jpg', '_1.jpg')
@@ -213,7 +213,7 @@ class BobaParser:
 
         if 'ml' in mileage:
             return int(int(mileage.replace('ml', '')) * 1.6)
-        
+
         try:
             return int(mileage.replace('km', ''))
         except ValueError:

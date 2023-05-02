@@ -10,11 +10,13 @@ class _SafeRequestContextManager:
     def __init__(
         self,
         session,
+        proxy_dispatcher,
         method,
         url,
         **kwargs,
     ):
         self.session = session
+        self.proxy_dispatcher = proxy_dispatcher
         self.url = url
         self.method = method
         self.kwargs = kwargs
@@ -31,19 +33,20 @@ class _SafeRequestContextManager:
                 self.kwargs['headers'] = {'User-Agent': self.agent.random}
 
             try:
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ URL ] {self.url}')
-                await asyncio.sleep(randint(0, 1))
+                proxy = await self.proxy_dispatcher.get_proxy()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ URL ] {self.url} - [ {proxy} ]')
+                await asyncio.sleep(randint(1, 2))
                 result = await self.session.request(
-                    self.method, 
+                    self.method,
                     self.url,
-                    proxy=self.proxy, 
-                    verify_ssl=False, 
+                    proxy=proxy,
+                    verify_ssl=False,
                     timeout=self.timeout,
                     **self.kwargs
                 )
                 return result
 
-            except RuntimeError as error:
+            except RuntimeError:
                 self.session = ClientSession()
 
             except Exception as error:
@@ -62,13 +65,16 @@ class _SafeRequestContextManager:
 class RequestDispatcher:
     def __init__(
         self,
-        session: ClientSession,
+        session,
+        proxy_dispatcher
     ):
         self.session = session
+        self.proxy_dispatcher = proxy_dispatcher
 
     def request(self, method, url, **kwargs):
         return _SafeRequestContextManager(
             self.session,
+            self.proxy_dispatcher,
             method,
             url,
             **kwargs,
