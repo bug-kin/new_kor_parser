@@ -4,13 +4,12 @@ from datetime import datetime
 from math import ceil
 from pathlib import Path
 
-from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
-from Utils import RequestDispatcher
 
 ROOT_DIR = Path('car_images')
 ROOT_DIR.mkdir(exist_ok=True)
+
 
 class BobaParser:
     URL = 'https://www.bobaedream.co.kr/mycar/mycar_list.php?ot=second&view_size=40&gubun={type_}&carriage={body_}&page={page}'
