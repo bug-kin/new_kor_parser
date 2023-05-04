@@ -1,5 +1,6 @@
 import asyncio
 import re
+import aiofiles
 from datetime import datetime
 from math import ceil
 from pathlib import Path
@@ -59,31 +60,45 @@ class BobaParser:
                 self.body = body_
                 page = 1
                 pages = 1
+                attempts = 2
                 while True:
                     if page > pages:
                         break
 
-                    async with self.request_dispatcher.get(
-                        self.URL.format(
-                            type_=type_,
-                            body_=body_,
-                            page=page
-                        )
-                    ) as resp:
-                        if resp.ok:
-                            soup = BeautifulSoup(await resp.read(), 'html.parser')
-                            total, pages = await self.get_total_records_and_pages(soup)
-                            if total == 0:
-                                break
+                    try:
+                        async with self.request_dispatcher.get(
+                            self.URL.format(
+                                type_=type_,
+                                body_=body_,
+                                page=page
+                            )
+                        ) as resp:
+                            if resp.ok:
+                                soup = BeautifulSoup(
+                                    await resp.read(),
+                                    'html.parser'
+                                )
+                                total, pages = (
+                                    await self.get_total_records_and_pages(
+                                        soup
+                                    )
+                                )
 
-                            await self.parse_cars(soup.find('div', id='listCont'))
-                            print()
+                    except AttributeError:
+                        if attempts == 0:
+                            break
 
+                        attempts -= 1
+
+                    if total == 0:
+                        break
+
+                    await self.parse_cars(soup.find('div', id='listCont'))
                     page += 1
 
-                # self.database.insert_or_update_car(self.cars)
-
-        print()
+                if self.cars:
+                    self.database.insert_or_update_car(self.cars)
+                    self.cars.clear()
 
     async def parse_cars(self, html):
         tasks = []
@@ -101,6 +116,7 @@ class BobaParser:
 
     async def parse_car(self, html):
         car = {}
+        car['source'] = 'bobaedream'
         car['id'] = int(re.search(
             r'no=(?P<carid>\d+)&',
             html.find('p', class_='tit').find('a')['href']
@@ -151,10 +167,10 @@ class BobaParser:
             url = 'https:' + string.replace('_s1', '')
 
         async with self.request_dispatcher.get(url) as resp:
-            if resp.status == 200:
+            if resp.ok:
                 path_to_photo = car_dir.joinpath(Path(url).name)
-                with open(path_to_photo, 'wb') as f:
-                    f.write(await resp.read())
+                async with aiofiles.open(path_to_photo, 'wb') as f:
+                    await f.write(await resp.read())
 
                 return str(path_to_photo)
 
@@ -168,7 +184,6 @@ class BobaParser:
     async def extract_transmission(self, string):
         if string := re.search(r'FF|FR|MR|RR|2WD|4WD|AWD', string):
             return self.TRANSMISSIONS[string.group(0)]
-
 
     @staticmethod
     async def extract_price(string):

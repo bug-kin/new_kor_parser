@@ -1,9 +1,9 @@
 import asyncio
+import aiofiles
 import re
 from datetime import datetime
 from math import ceil
 from pathlib import Path
-
 from bs4 import BeautifulSoup
 
 ROOT_DIR = Path('car_images')
@@ -63,8 +63,12 @@ class ChachaParser:
                 json = json['list'][0]
                 car['mark'] = json['makerName']
                 car['model'] = json['className']
-                car['grade'] = f'json["modelName"] + json["gradeName"]'.strip()
+                car['grade'] = f'{json["modelName"]} + {json["gradeName"]}'.strip()
                 car['gearbox'] = None
+                car['preview'] = await self.download_photo(
+                    car.get('preview'),
+                    car['id']
+                )
 
                 if match := re.search('(?P<transmission>AWD|RWD|FWD|2WD|4WD)', car['grade']):
                     car['transmission'] = match.group('transmission')
@@ -90,7 +94,7 @@ class ChachaParser:
                 use_code_filter = all_filters['optionSale']['result']['useCode']
                 cars = []
                 for code, name in self.BODY_TYPES.items():
-                    total, pages = await self.get_total_records_and_pages(code, use_code_filter)
+                    _, pages = await self.get_total_records_and_pages(code, use_code_filter)
                     if not pages:
                         continue
 
@@ -117,20 +121,24 @@ class ChachaParser:
             self.cars.update(batch)
 
     async def get_cars_per_page(self, code, page, body_type):
-        async with self.request_dispatcher.get(
-            self.URL.format(code=code, page=page)
-        ) as resp:
-            soup = BeautifulSoup(await resp.read(), 'html.parser')
-            general_cars = soup.find('div', class_='generalRegist')
-            return {
-                int(car['data-car-seq']): {
-                    'id': int(car['data-car-seq']),
-                    'preview': await self.download_photo(
-                        car.find('img')['src'], int(car['data-car-seq'])),
-                    'body_type': body_type,
-                }
-                for car in general_cars.find_all('div', class_='area')
-            }
+            try:
+                async with self.request_dispatcher.get(
+                    self.URL.format(code=code, page=page)
+                ) as resp:
+                    soup = BeautifulSoup(await resp.read(), 'html.parser')
+                    general_cars = soup.find('div', class_='generalRegist')
+                    return {
+                        int(car['data-car-seq']): {
+                            'source': 'kbchachacha',
+                            'id': int(car['data-car-seq']),
+                            'preview': car.find('img')['src'],
+                            'body_type': body_type,
+                        }
+                        for car in general_cars.find_all('div', class_='area')
+                    }
+            except AttributeError as error:
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ATTRIBUTE ERROR ] - {error}')
+                return None
 
     async def download_photo(self, url, car_id):
         car_dir = ROOT_DIR.joinpath(f'kbchachacha_{car_id}')
@@ -140,16 +148,17 @@ class ChachaParser:
         async with self.request_dispatcher.get(url) as resp:
             if resp.ok:
                 path_to_photo = car_dir.joinpath(Path(url).name)
-                with open(path_to_photo, 'wb') as f:
-                    f.write(await resp.read())
+                async with aiofiles.open(path_to_photo, 'wb') as f:
+                    await f.write(await resp.read())
 
                 return str(path_to_photo)
 
     @staticmethod
     async def get_total_records_and_pages(code, filter_):
         total = filter_.get(code)
-        pages = ceil(total / 100)
-        if pages > 90:
-            pages = 90
+        pages = ceil(total / 50)
+        if pages > 100:
+            pages = 100
+
         print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ PAGES ] {pages} - [ TOTAL ] {total}')
         return total, pages
