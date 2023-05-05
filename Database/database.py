@@ -50,9 +50,9 @@ class Database:
     def insert_or_update_car(self, cars):
         batch = []
         for car in cars:
-            site_id = self.sources[car['source']]
-            if self.check_car_existance(site_id, car.get('id')):
-                self.update_timestamp(site_id, car.get('id'))
+            source_site_id = self.sources[car['source']]
+            if self.check_car_existance(source_site_id, car.get('id')):
+                self.update_timestamp(source_site_id, car.get('id'))
                 continue
 
             if not (body_type_id := self.car_bodies.get(car.get('body_type'))):
@@ -145,7 +145,7 @@ class Database:
 
             batch.append(
                 (
-                    site_id,
+                    source_site_id,
                     car['id'],
                     body_type_id,
                     mark_id,
@@ -202,7 +202,7 @@ class Database:
     def inserting_cars(self, data):
         print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ INSERTING ] - Inserting cars...')
         attempt = 1
-        query = 'INSERT INTO cars (site_id, car_id, car_body_id, mark_id, model_id, grade_name, gearbox_id, drive_type_id, fuel_type_id, price, year, mileage, engine_vol, preview) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
+        query = 'INSERT INTO cars (source_site_id, car_id, body_id, mark_id, model_id, grade_name, gearbox_id, transmission_id, fuel_type_id, price, year, mileage, engine_vol, preview) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
         while True:
             try:
                 with self.connection.cursor() as cursor:
@@ -220,45 +220,59 @@ class Database:
             except Exception as error:
                 self.connection.rollback()
                 print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
-                if attempt == 3:
+
+            if attempt == 3:
+                return
+
+            attempt += 1
+
+    def check_car_existance(self, source_site_id, car_id):
+        attempts = 2
+        while True:
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Checking the car {car_id} for existence')
+            try:
+                with self.connection.cursor() as cursor:
+                    result = cursor.execute(f'SELECT id, car_id FROM cars WHERE source_site_id={source_site_id} and car_id={car_id};')
+                    if result:
+                        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Car {car_id} exist')
+                        return True
+
+                    print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Car {car_id} doesn\'t exist')
+                    return False
+
+            except (TimeoutError, OperationalError) as error:
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+                self.connection.close()
+                self.connection = self.connecting()
+
+            if attempts == 0:
+                return
+
+            attempts -= 1
+
+    def update_timestamp(self, source_site_id, car_id):
+        attempts = 2
+        while True:
+            try:
+                with self.connection.cursor() as cursor:
+                    print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATE ] Car {car_id} updating relevance')
+                    cursor.execute(f'UPDATE cars SET updated_at=now() WHERE source_site_id={source_site_id} and car_id={car_id};')
+
+                self.connection.commit()
+
+            except (TimeoutError, OperationalError) as error:
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+                self.connection.close()
+                self.connection = self.connecting()
+
+            except Exception as error:
+                self.connection.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+
+            if attempts == 0:
                     return
 
-                attempt += 1
-
-    def check_car_existance(self, site_id, car_id):
-        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Checking the car {car_id} for existence')
-
-        try:
-            with self.connection.cursor() as cursor:
-                result = cursor.execute(f'SELECT id, car_id FROM cars WHERE site_id={site_id} and car_id={car_id};')
-                if result:
-                    print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Car {car_id} exist')
-                    return True
-
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Car {car_id} doesn\'t exist')
-                return False
-
-        except (TimeoutError, OperationalError):
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
-
-    def update_timestamp(self, site_id, car_id):
-        try:
-            with self.connection.cursor() as cursor:
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATE ] Car {car_id} updating relevance')
-                cursor.execute(f'UPDATE cars SET updated_at=now() WHERE site_id={site_id} and car_id={car_id};')
-
-            self.connection.commit()
-
-        except (TimeoutError, OperationalError):
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
-
-        except Exception as error:
-            self.connection.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            attempts -= 1
 
 
 class Deprecated:
