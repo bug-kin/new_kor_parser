@@ -1,11 +1,11 @@
 import asyncio
 import re
 from datetime import datetime
-from pathlib import Path
 from math import ceil
+from pathlib import Path
 
 import aiofiles
-
+from aiohttp import ClientPayloadError
 
 ROOT_DIR = Path('car_images')
 ROOT_DIR.mkdir(exist_ok=True)
@@ -82,23 +82,33 @@ class EncarParser:
     async def download_photo(self, car):
         car_dir = ROOT_DIR.joinpath(f'encar_{car["id"]}')
         car_dir.mkdir(parents=True, exist_ok=True)
+        attempts = 2
+        while True:
+            try:
+                async with self.request_dispatcher.get(
+                    url=car['preview'],
+                    params={
+                        "impolicy": "widthRate",
+                        "rw": 1024,
+                        "cw": 1024,
+                        "ch": 768,
+                    }
+                ) as resp:
+                    if resp.ok:
+                        path_to_photo = car_dir.joinpath(Path(car['preview']).name)
+                        async with aiofiles.open(path_to_photo, 'wb') as f:
+                            await f.write(await resp.read())
 
-        async with self.request_dispatcher.get(
-            url=car['preview'],
-            params={
-                "impolicy": "widthRate",
-                "rw": 1024,
-                "cw": 1024,
-                "ch": 768,
-            }
-        ) as resp:
-            if resp.ok:
-                path_to_photo = car_dir.joinpath(Path(car['preview']).name)
-                async with aiofiles.open(path_to_photo, 'wb') as f:
-                    await f.write(await resp.read())
+                        car['preview'] = str(path_to_photo)
+                        return
 
-                car['preview'] = str(path_to_photo)
-                return
+            except ClientPayloadError as error:
+                if attempts == 0:
+                    break
+
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}')
+                asyncio.sleep(4)
+                attempts -= 1
 
     async def get_cars(self, url, body_type):
         async with self.request_dispatcher.get(url) as resp:

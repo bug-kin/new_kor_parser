@@ -1,5 +1,6 @@
+from random import choice
+
 import requests
-from random import randint
 
 
 class ProxyDispatcher:
@@ -19,4 +20,4 @@ class ProxyDispatcher:
                 ]
 
     async def get_proxy(self):
-        return self.proxies[randint(0, 99)]
+        return choice(self.proxies)

@@ -1,82 +1,206 @@
-import pymysql
 from datetime import datetime
+
+import pymysql
+from pymysql.err import OperationalError
+from .database_configs import data
 
 
 class Database:
     def __init__(self,):
         self.connection = self.connecting()
-        self.sources = self.get_sources()
-        self.car_bodies = self.get_car_bodies()
-        self.car_marks = self.get_car_marks()
-        self.models = self.get_models()
-        self.transmissions = self.get_transmissions()
-        self.gearboxes = self.get_gearboxes()
-        self.fuel_types = self.get_fuel_types()
+        self.sources = self.get_all_records(
+            data.schema.source.table,
+            data.schema.source.fields
+        )
+        self.car_bodies = self.get_all_records(
+            data.schema.car_body.table,
+            data.schema.car_body.fields
+        )
+        self.car_marks = self.get_all_records(
+            data.schema.car_mark.table,
+            data.schema.car_mark.fields
+        )
+        self.models = self.get_all_records(
+            data.schema.car_model.table,
+            data.schema.car_model.fields
+        )
+        self.transmissions = self.get_all_records(
+            data.schema.transmission.table,
+            data.schema.transmission.fileds
+        )
+        self.gearboxes = self.get_all_records(
+            data.schema.gearbox.table,
+            data.schema.gearbox.fields
+        )
+        self.fuel_types = self.get_all_records(
+            data.schema.fuel_type.table,
+            data.schema.fuel_type.fields
+        )
 
     @staticmethod
     def connecting():
-        return pymysql.connect(
-            host='pepe.foundation',
-            user='homestead',
-            password='homestead',
-            db='homestead',
+        return pymysql.Connection(
+            host=data.connection.host,
+            user=data.connection.user,
+            password=data.connection.password,
+            db=data.connection.database,
             cursorclass=pymysql.cursors.DictCursor
         )
 
     def insert_or_update_car(self, cars):
-        data = []
+        batch = []
         for car in cars:
             site_id = self.sources[car['source']]
-            if self.check_car_existance(site_id, car['id']):
-                self.update_updated_at(site_id, car['id'])
+            if self.check_car_existance(site_id, car.get('id')):
+                self.update_timestamp(site_id, car.get('id'))
                 continue
 
-            if not (body_type_id := self.car_bodies.get(car['body_type'])):
-                self.insert_new_body_type(car['body_type'])
-                self.car_bodies = self.get_car_bodies()
-                body_type_id = self.car_bodies[car['body_type']]
+            if not (body_type_id := self.car_bodies.get(car.get('body_type'))):
+                self.insert_new_record(
+                    table=data.schema.car_body.table,
+                    field=data.schema.car_body.fields[1],
+                    data=car.get('body_type')
+                )
+                self.car_bodies = self.get_all_records(
+                    data.schema.car_body.table,
+                    data.schema.car_body.fields
+                )
+                body_type_id = self.car_bodies.get(car.get('body_type'))
 
-            if not (mark_id := self.car_marks.get(car['mark'])):
-                self.insert_new_car_mark(car['mark'])
-                self.car_marks = self.get_car_marks()
-                mark_id = self.car_marks[car['mark']]
+            if not (mark_id := self.car_marks.get(car.get('mark'))):
+                self.insert_new_record(
+                    table=data.schema.car_mark.table,
+                    field=data.schema.car_mark.fields[1],
+                    data=car.get('mark')
+                )
+                self.car_marks = self.get_all_records(
+                    data.schema.car_mark.table,
+                    data.schema.car_mark.fields
+                )
+                mark_id = self.car_marks.get(car.get('mark'))
 
-            if not (model_id := self.models.get(car['model'])):
-                self.insert_new_model(car['model'])
-                self.models = self.get_models()
-                model_id = self.models[car['model']]
+            if not (model_id := self.models.get(car.get('model'))):
+                self.insert_new_record(
+                    table=data.schema.car_model.table,
+                    field=data.schema.car_model.fields[1],
+                    data=car.get('model')
+                )
+                self.models = self.get_all_records(
+                    data.schema.car_model.table,
+                    data.schema.car_model.fields
+                )
+                model_id = self.models.get(car.get('model'))
 
-            if car['transmission']:
-                if not (transmission_id := self.transmissions.get(car['transmission'])):
-                    self.insert_new_transmission(car['transmission'])
-                    self.transmissions = self.get_transmissions()
-                    transmission_id = self.transmissions[car['transmission']]
+            if car.get('transmission'):
+                if not (transmission_id := self.transmissions.get(car.get('transmission'))):
+                    self.insert_new_record(
+                        table=data.schema.transmission.table,
+                        field=data.schema.transmission.fileds[1],
+                        data=car.get('transmission')
+                    )
+                    self.transmissions = self.get_all_records(
+                        data.schema.transmission.table,
+                        data.schema.transmission.fileds
+                    )
+                    transmission_id = self.transmissions.get(
+                        car.get('transmission')
+                    )
             else:
                 transmission_id = None
 
-            if not (gearbox_id := self.gearboxes.get(car['gearbox'])):
-                self.insert_new_gearbox(car['gearbox'])
-                self.gearboxes = self.get_gearboxes()
-                gearbox_id = self.gearboxes[car['gearbox']]
+            if car.get('gearbox'):
+                if not (gearbox_id := self.gearboxes.get(car.get('gearbox'))):
+                    self.insert_new_record(
+                        table=data.schema.gearbox.table,
+                        field=data.schema.gearbox.fields[1],
+                        data=car.get('gearbox')
+                    )
+                    self.gearboxes = self.get_all_records(
+                        data.schema.gearbox.table,
+                        data.schema.gearbox.fields
+                    )
+                    gearbox_id = self.gearboxes.get(car['gearbox'])
+            else:
+                gearbox_id = None
 
-            if not (fuel_type_id := self.fuel_types.get(car['fuel'])):
-                self.insert_new_fuel_type(car['fuel'])
-                self.fuel_types = self.get_fuel_types()
-                fuel_type_id = self.fuel_types[car['fuel']]
+            if car.get('fuel'):
+                if not (fuel_type_id := self.fuel_types.get(car.get('fuel'))):
+                    # self.insert_new_record('fuel_type', 'kr_name', car.get('fuel'))
+                    self.insert_new_record(
+                        table=data.schema.fuel_type,
+                        field=data.schema.fuel_type.fields[1],
+                        data=car.get('fuel')
+                    )
+                    self.fuel_types = self.get_all_records(
+                        data.schema.fuel_type.table,
+                        data.schema.fuel_type.fields
+                    )
+                    fuel_type_id = self.fuel_types.get(car.get('fuel'))
+            else:
+                fuel_type_id = None
 
-            if len(data) == 500:
-                self.inserting_cars(data)
-                data.clear()
+            if len(batch) == 500:
+                self.inserting_cars(batch)
+                batch.clear()
 
-            data.append(
-                (site_id, car['id'], body_type_id, mark_id, model_id, car['grade'], gearbox_id, transmission_id, fuel_type_id, car['price'], car['year'], car['mileage'], car['engine'], car['preview'])
+            batch.append(
+                (
+                    site_id,
+                    car['id'],
+                    body_type_id,
+                    mark_id,
+                    model_id,
+                    car['grade'],
+                    gearbox_id,
+                    transmission_id,
+                    fuel_type_id,
+                    car['price'],
+                    car['year'],
+                    car['mileage'],
+                    car['engine'],
+                    car['preview']
+                )
             )
 
-        if data:
-            self.inserting_cars(data)
+        if batch:
+            self.inserting_cars(batch)
+
+    def get_all_records(self, table, fields):
+        try:
+            query = f'SELECT {", ".join(fields)} FROM {table};'
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ SELECT ] {query}')
+            with self.connection.cursor() as cursor:
+                cursor.execute(query)
+                return {
+                    row.get(fields[1]): row.get(fields[0])
+                    for row in cursor.fetchall()
+                }
+
+        except (TimeoutError, OperationalError):
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+            self.connection.close()
+            self.connection = self.connecting()
+
+    def insert_new_record(self, table, field, data):
+        try:
+            query = f'INSERT INTO {table} ({field}) VALUES (\'{data}\');'
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ INSERT ] {query}')
+            with self.connection.cursor() as cursor:
+                cursor.execute(query)
+
+            self.connection.commit()
+
+        except (TimeoutError, OperationalError):
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+            self.connection.close()
+            self.connection = self.connecting()
+
+        except Exception as error:
+            self.connection.rollback()
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
     def inserting_cars(self, data):
-        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ INSERT ] - Inserting cars...')
+        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ INSERTING ] - Inserting cars...')
         attempt = 1
         query = 'INSERT INTO cars (site_id, car_id, car_body_id, mark_id, model_id, grade_name, gearbox_id, drive_type_id, fuel_type_id, price, year, mileage, engine_vol, preview) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
         while True:
@@ -85,10 +209,10 @@ class Database:
                     cursor.executemany(query, data)
 
                 self.connection.commit()
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ INSERT ] - Inserted')
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ INSERTED ] - Inserted [{len(data)}]')
                 return
 
-            except TimeoutError:
+            except (TimeoutError, OperationalError):
                 print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
                 self.connection.close()
                 self.connection = self.connecting()
@@ -102,32 +226,32 @@ class Database:
                 attempt += 1
 
     def check_car_existance(self, site_id, car_id):
-        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] - Checking the car {car_id} for existence')
+        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Checking the car {car_id} for existence')
 
         try:
             with self.connection.cursor() as cursor:
                 result = cursor.execute(f'SELECT id, car_id FROM cars WHERE site_id={site_id} and car_id={car_id};')
                 if result:
-                    print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] - Car {car_id} exist')
+                    print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Car {car_id} exist')
                     return True
 
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] - Car {car_id} doesn\'t exist')
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ CHECK ] Car {car_id} doesn\'t exist')
                 return False
 
-        except TimeoutError:
+        except (TimeoutError, OperationalError):
             print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
             self.connection.close()
             self.connection = self.connecting()
 
-    def update_updated_at(self, site_id, car_id):
+    def update_timestamp(self, site_id, car_id):
         try:
             with self.connection.cursor() as cursor:
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATE ] - Car {car_id} updating relevance')
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATE ] Car {car_id} updating relevance')
                 cursor.execute(f'UPDATE cars SET updated_at=now() WHERE site_id={site_id} and car_id={car_id};')
 
             self.connection.commit()
 
-        except TimeoutError:
+        except (TimeoutError, OperationalError):
             print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
             self.connection.close()
             self.connection = self.connecting()
@@ -136,196 +260,200 @@ class Database:
             self.connection.rollback()
             print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
-    def get_sources(self):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute('SELECT id, site FROM source;')
-                return {
-                    row.get('site'): row.get('id')
-                    for row in cursor.fetchall()
-                }
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+class Deprecated:
+    class Getting:
+        def get_sources(self):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute('SELECT id, site FROM source;')
+                    return {
+                        row.get('site'): row.get('id')
+                        for row in cursor.fetchall()
+                    }
 
-    def get_car_bodies(self):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute('SELECT id, kr_name FROM car_body;')
-                return {
-                    row.get('kr_name'): row.get('id')
-                    for row in cursor.fetchall()
-                }
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+        def get_car_bodies(self):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute('SELECT id, kr_name FROM car_body;')
+                    return {
+                        row.get('kr_name'): row.get('id')
+                        for row in cursor.fetchall()
+                    }
 
-    def insert_new_body_type(self, body_type):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'INSERT INTO car_body (kr_name) VALUES (\'{body_type}\');')
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-            self.connection.commit()
+        def get_car_marks(self):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute('SELECT id, kr_name FROM car_mark;')
+                    return {
+                        row.get('kr_name'): row.get('id')
+                        for row in cursor.fetchall()
+                    }
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-        except Exception as error:
-            self.connection.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+        def get_models(self):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute('SELECT id, kr_name FROM model;')
+                    return {
+                        row.get('kr_name'): row.get('id')
+                        for row in cursor.fetchall()
+                    }
 
-    def get_car_marks(self):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute('SELECT id, kr_name FROM car_mark;')
-                return {
-                    row.get('kr_name'): row.get('id')
-                    for row in cursor.fetchall()
-                }
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+        def get_transmissions(self):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute('SELECT id, name FROM drive_type;')
+                    return {
+                        row.get('name'): row.get('id')
+                        for row in cursor.fetchall()
+                    }
 
-    def insert_new_car_mark(self, mark):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'INSERT INTO car_mark (kr_name) VALUES (\'{mark}\');')
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-            self.connection.commit()
+        def get_gearboxes(self):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute('SELECT id, kr_name FROM gearbox;')
+                    return {
+                        row.get('kr_name'): row.get('id')
+                        for row in cursor.fetchall()
+                    }
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-        except Exception as error:
-            self.connection.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+        def get_fuel_types(self):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute('SELECT id, kr_name FROM fuel_type;')
+                    return {
+                        row.get('kr_name'): row.get('id')
+                        for row in cursor.fetchall()
+                    }
 
-    def get_models(self):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute('SELECT id, kr_name FROM model;')
-                return {
-                    row.get('kr_name'): row.get('id')
-                    for row in cursor.fetchall()
-                }
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+    class Inserting:
+        def insert_new_fuel_type(self, fuel_type):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute(f'INSERT INTO fuel_type (kr_name) VALUES (\'{fuel_type}\');')
 
-    def insert_new_model(self, model):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'INSERT INTO model (kr_name) VALUES (\'{model}\');')
+                self.connection.commit()
 
-            self.connection.commit()
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+            except Exception as error:
+                self.connection.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
-        except Exception as error:
-            self.connection.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+        def insert_new_body_type(self, body_type):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute(f'INSERT INTO car_body (kr_name) VALUES (\'{body_type}\');')
 
-    def get_transmissions(self):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute('SELECT id, name FROM drive_type;')
-                return {
-                    row.get('name'): row.get('id')
-                    for row in cursor.fetchall()
-                }
+                self.connection.commit()
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-    def insert_new_transmission(self, transmission):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'INSERT INTO drive_type (name) VALUES (\'{transmission}\');')
+            except Exception as error:
+                self.connection.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
-            self.connection.commit()
+        def insert_new_model(self, model):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute(f'INSERT INTO model (kr_name) VALUES (\'{model}\');')
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+                self.connection.commit()
 
-        except Exception as error:
-            self.connection.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-    def get_gearboxes(self):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute('SELECT id, kr_name FROM gearbox;')
-                return {
-                    row.get('kr_name'): row.get('id')
-                    for row in cursor.fetchall()
-                }
+            except Exception as error:
+                self.connection.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+        def insert_new_gearbox(self, gearbox):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute(f'INSERT INTO gearbox (kr_name) VALUES (\'{gearbox}\');')
 
-    def insert_new_gearbox(self, gearbox):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'INSERT INTO gearbox (kr_name) VALUES (\'{gearbox}\');')
+                self.connection.commit()
 
-            self.connection.commit()
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+            except Exception as error:
+                self.connection.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
-        except Exception as error:
-            self.connection.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+        def insert_new_transmission(self, transmission):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute(f'INSERT INTO drive_type (name) VALUES (\'{transmission}\');')
 
-    def get_fuel_types(self):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute('SELECT id, kr_name FROM fuel_type;')
-                return {
-                    row.get('kr_name'): row.get('id')
-                    for row in cursor.fetchall()
-                }
+                self.connection.commit()
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
 
-    def insert_new_fuel_type(self, fuel_type):
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f'INSERT INTO fuel_type (kr_name) VALUES (\'{fuel_type}\');')
+            except Exception as error:
+                self.connection.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
-            self.connection.commit()
+        def insert_new_car_mark(self, mark):
+            try:
+                with self.connection.cursor() as cursor:
+                    cursor.execute(f'INSERT INTO car_mark (kr_name) VALUES (\'{mark}\');')
 
-        except TimeoutError:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
-            self.connection.close()
-            self.connection = self.connecting()
+                self.connection.commit()
 
-        except Exception as error:
-            self.connection.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            except (TimeoutError, OperationalError):
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TimeOut ] TimeoutError')
+                self.connection.close()
+                self.connection = self.connecting()
+
+            except Exception as error:
+                self.connection.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')

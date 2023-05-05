@@ -1,4 +1,6 @@
 import asyncio
+from datetime import datetime
+from time import time
 
 from aiohttp import ClientSession
 
@@ -15,6 +17,9 @@ async def main():
 
         boba_parser = BobaParser(request_dispatcher, database)
         await boba_parser.parse()
+        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ DONE ] Parsing done')
 
 if __name__ == "__main__":
+    start = time()
     asyncio.run(main())
+    print(f'-- {time() - start} s --')

@@ -1,12 +1,11 @@
 import asyncio
 import re
-import aiofiles
 from datetime import datetime
 from math import ceil
 from pathlib import Path
 
+import aiofiles
 from bs4 import BeautifulSoup
-
 
 ROOT_DIR = Path('car_images')
 ROOT_DIR.mkdir(exist_ok=True)
@@ -84,16 +83,17 @@ class BobaParser:
                                     )
                                 )
 
+                            if total == 0:
+                                break
+
+                            await self.parse_cars(soup.find('div', id='listCont'))
+
                     except AttributeError:
                         if attempts == 0:
                             break
 
                         attempts -= 1
 
-                    if total == 0:
-                        break
-
-                    await self.parse_cars(soup.find('div', id='listCont'))
                     page += 1
 
                 if self.cars:

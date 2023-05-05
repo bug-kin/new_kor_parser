@@ -1,9 +1,10 @@
 import asyncio
-import aiofiles
 import re
 from datetime import datetime
 from math import ceil
 from pathlib import Path
+
+import aiofiles
 from bs4 import BeautifulSoup
 
 ROOT_DIR = Path('car_images')
