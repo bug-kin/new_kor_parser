@@ -21,20 +21,22 @@ class _SafeRequestContextManager:
         self.method = method
         self.kwargs = kwargs
         self.agent = FakeUserAgent()
-        self.proxy = 'http://mzrgytyk-rotate:vc6crg3txb76@p.webshare.io:80/'
+        self.proxy = "http://mzrgytyk-rotate:vc6crg3txb76@p.webshare.io:80/"
         self.timeout = ClientTimeout(120)
 
     async def __aenter__(self):
         attempt = 1
         while True:
-            if 'headers' in self.kwargs.keys():
-                self.kwargs['headers']['User-Agent'] = self.agent.random
+            if "headers" in self.kwargs.keys():
+                self.kwargs["headers"]["User-Agent"] = self.agent.random
             else:
-                self.kwargs['headers'] = {'User-Agent': self.agent.random}
+                self.kwargs["headers"] = {"User-Agent": self.agent.random}
 
             try:
                 proxy = await self.proxy_dispatcher.get_proxy()
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ URL ] {self.url} - [ {proxy} ]')
+                print(
+                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ URL ] {self.url} - [ {proxy} ]'
+                )
                 await asyncio.sleep(randint(1, 2))
                 result = await self.session.request(
                     self.method,
@@ -42,7 +44,7 @@ class _SafeRequestContextManager:
                     proxy=proxy,
                     verify_ssl=False,
                     timeout=self.timeout,
-                    **self.kwargs
+                    **self.kwargs,
                 )
                 return result
 
@@ -53,7 +55,9 @@ class _SafeRequestContextManager:
                 if attempt == 3:
                     return
 
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ATTEMPT ] {attempt} - [ ERROR ] {error} - [ URL ] {self.url}')
+                print(
+                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ATTEMPT ] {attempt} - [ ERROR ] {error} - [ URL ] {self.url}'
+                )
                 attempt += 1
                 await asyncio.sleep(randint(2, 3))
 
@@ -63,11 +67,7 @@ class _SafeRequestContextManager:
 
 
 class RequestDispatcher:
-    def __init__(
-        self,
-        session,
-        proxy_dispatcher
-    ):
+    def __init__(self, session, proxy_dispatcher):
         self.session = session
         self.proxy_dispatcher = proxy_dispatcher
 
@@ -81,7 +81,7 @@ class RequestDispatcher:
         )
 
     def get(self, url, **kwargs):
-        return self.request('GET', url, **kwargs)
+        return self.request("GET", url, **kwargs)
 
     def post(self, url, **kwargs):
-        return self.request('POST', url, **kwargs)
+        return self.request("POST", url, **kwargs)
