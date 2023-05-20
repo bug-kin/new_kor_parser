@@ -96,9 +96,9 @@ class BobaParser:
 
                     page += 1
 
-                if self.cars:
-                    self.database.insert_or_update_car(self.cars)
-                    self.cars.clear()
+                # if self.cars:
+                #     self.database.insert_or_update_car(self.cars)
+                #     self.cars.clear()
 
     async def parse_cars(self, html):
         tasks = []

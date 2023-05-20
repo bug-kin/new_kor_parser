@@ -75,7 +75,7 @@ class ChachaParser:
                 json = json["list"][0]
                 car["mark"] = json["makerName"]
                 car["model"] = json["className"]
-                car["grade"] = f'{json["modelName"]} + {json["gradeName"]}'.strip()
+                car["grade"] = f'{json["modelName"]} {json["gradeName"]}'.strip()
                 car["gearbox"] = None
                 car["preview"] = await self.download_photo(
                     car.get("preview"), car["id"]

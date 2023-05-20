@@ -50,7 +50,12 @@ class Database:
                 continue
 
             if self.check_car_existance(source_site_id, car.get("id")):
-                self.update_timestamp(source_site_id, car.get("id"))
+                self.update_record(
+                    source_site_id=source_site_id,
+                    car_id=car.get('id'),
+                    preview=car['preview'],
+                    grade=car['grade'],
+                )
                 continue
 
             if not (body_type_id := self.car_bodies.get(car.get("body_type"))):
@@ -267,35 +272,28 @@ class Database:
 
             attempts -= 1
 
-    def update_timestamp(self, source_site_id, car_id):
+    def update_record(self, source_site_id, car_id, preview, grade):
         attempts = 2
         while True:
             try:
                 with self.connection.cursor() as cursor:
-                    print(
-                        f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATE ] Car {car_id} updating relevance'
-                    )
-                    cursor.execute(
-                        f"UPDATE cars SET updated_at=now() WHERE source_site_id={source_site_id} and car_id={car_id};"
-                    )
+                    print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATE ] Updating {car_id}')
+                    cursor.execute(f'UPDATE cars SET preview=%s, grade_name=%s, updated_at=now() WHERE source_site_id={source_site_id} and car_id={car_id};', (preview, grade))
 
                 self.connection.commit()
+                return
 
             except (TimeoutError, OperationalError) as error:
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
-                )
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
                 self.connection.close()
                 self.connection = self.connecting()
 
             except Exception as error:
                 self.connection.rollback()
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
-                )
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
 
             if attempts == 0:
-                return
+                    return
 
             attempts -= 1
 
