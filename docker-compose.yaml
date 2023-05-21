@@ -15,7 +15,7 @@ services:
     environment:
       TZ: 'Asia/Almaty'
 
-networks:
-  default:
-    external:
-      name: traefik
+# networks:
+#   default:
+#     external:
+#       name: traefik

@@ -21,9 +21,7 @@ class Database:
     def __init__(self):
         self.engine = create_async_engine(
             config.connection.engine,
-            pool_size=20,
             pool_recycle=180,
-            connect_args={'timeout': 50},
             echo=True,
         )
         self.session = async_sessionmaker(bind=self.engine)
@@ -44,7 +42,7 @@ class Database:
 
         batch = []
         for car in cars:
-            if len(batch) == 20:
+            if len(batch) == 10:
                 await gather(*batch)
                 batch.clear()
             
@@ -52,8 +50,6 @@ class Database:
         
         await gather(*batch)
         batch.clear()
-        await self.engine.dispose()
-
 
     async def process_car(self, car):
         async with self.session() as session:

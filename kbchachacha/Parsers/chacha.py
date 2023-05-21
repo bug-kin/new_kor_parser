@@ -119,7 +119,7 @@ class ChachaParser:
                 print(
                     f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
                 )
-                asyncio.sleep(3)
+                await asyncio.sleep(3)
                 attempts -= 1
 
     async def parse_cars_for_category(self, filter, code, name):
