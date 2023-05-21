@@ -57,7 +57,7 @@ class ChachaParser:
                     await asyncio.gather(*tasks)
                     tasks.clear()
 
-                    self.database.insert_or_update_car(cars.values())
+                    await self.database.cars_processing(list(cars.values()))
 
     async def parse_car(self, car):
         async with self.request_dispatcher.post(
@@ -166,8 +166,8 @@ class ChachaParser:
 
     async def calculate_pages(self, total):
         pages = ceil(total / 50)
-        if pages > 120:
-            pages = 120
+        if pages > 90:
+            pages = 90
 
         print(
             f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TOTAL PAGES ] {pages}'

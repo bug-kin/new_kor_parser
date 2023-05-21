@@ -38,7 +38,7 @@ class Database:
 
         batch = []
         for car in cars:
-            if len(batch) == 30:
+            if len(batch) == 10:
                 await gather(*batch)
                 batch.clear()
             
@@ -105,27 +105,31 @@ class Database:
                 field='kr_name'
             )
 
-            await session.execute(
-                insert(Cars)
-                .values(
-                    source_site_id=source_id,
-                    car_id=car.get('id'),
-                    body_id=body_id,
-                    mark_id=mark_id,
-                    model_id=model_id,
-                    grade_name=car.get('grade'),
-                    year=car.get('year'),
-                    price=car.get('price'),
-                    mileage=car.get('mileage'),
-                    gearbox_id=gearbox_id,
-                    transmission_id=transmission_id,
-                    fuel_type_id=fuel_type_id,
-                    engine_vol=car.get('engine'),
-                    preview=car.get('preview')
+            try:
+                await session.execute(
+                    insert(Cars)
+                    .values(
+                        source_site_id=source_id,
+                        car_id=car.get('id'),
+                        body_id=body_id,
+                        mark_id=mark_id,
+                        model_id=model_id,
+                        grade_name=car.get('grade'),
+                        year=car.get('year'),
+                        price=car.get('price'),
+                        mileage=car.get('mileage'),
+                        gearbox_id=gearbox_id,
+                        transmission_id=transmission_id,
+                        fuel_type_id=fuel_type_id,
+                        engine_vol=car.get('engine'),
+                        preview=car.get('preview')
+                    )
                 )
-            )
-            await session.commit()
-
+                await session.commit()
+            except Exception as error:
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+                return
+ 
     async def get_or_create_record(self, target, dictionary, table, field):
         if not target:
             return None

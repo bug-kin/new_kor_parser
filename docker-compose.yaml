@@ -1,0 +1,11 @@
+version: '3.10'
+services:
+  encar:
+    build: ./encar/.
+    environment:
+      TZ: 'Asia/Almaty'
+
+  bobaedream:
+    build: ./bobaedream/.
+    environment:
+      TZ: 'Asia/Almaty'

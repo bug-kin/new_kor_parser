@@ -2,7 +2,7 @@ from random import choice
 
 import requests
 
-from configs import proxy
+from configs import config
 
 
 class ProxyDispatcher:
@@ -11,8 +11,8 @@ class ProxyDispatcher:
 
     def get_proxies(self):
         with requests.get(
-                url=proxy.url,
-                headers={'Authorization': f'Token {proxy.token}'}
+                url=config.proxy.url,
+                headers={'Authorization': f'Token {config.proxy.token}'}
         ) as resp:
             if resp.ok:
                 webshare_response = resp.json()
