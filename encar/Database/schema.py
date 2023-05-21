@@ -11,8 +11,8 @@ class CarSourceSite(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     site = Column(String, unique=True, nullable=False)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class CarBody(Base):
@@ -22,8 +22,8 @@ class CarBody(Base):
     kr_name = Column(String, unique=True, nullable=False)
     ru_name = Column(String)
     en_name = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class CarMark(Base):
@@ -33,8 +33,8 @@ class CarMark(Base):
     kr_name = Column(String, unique=True, nullable=False)
     ru_name = Column(String)
     en_name = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class CarModel(Base):
@@ -44,8 +44,8 @@ class CarModel(Base):
     kr_name = Column(String, unique=True, nullable=False)
     ru_name = Column(String)
     en_name = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class CarTransmission(Base):
@@ -53,8 +53,8 @@ class CarTransmission(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class CarGearbox(Base):
@@ -64,8 +64,8 @@ class CarGearbox(Base):
     kr_name = Column(String, unique=True, nullable=False)
     ru_name = Column(String)
     en_name = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class CarFuelType(Base):
@@ -75,8 +75,8 @@ class CarFuelType(Base):
     kr_name = Column(String, unique=True, nullable=False)
     ru_name = Column(String)
     en_name = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class Cars(Base):
@@ -104,6 +104,6 @@ class Cars(Base):
     seller = Column(JSON)
     tech_inspection_url = Column(JSON)
     insurance_url = Column(JSON)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime, onupdate=datetime.now())
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     deleted_at = Column(DateTime)

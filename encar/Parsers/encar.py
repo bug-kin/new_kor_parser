@@ -98,7 +98,7 @@ class EncarParser:
                     await asyncio.gather(*tasks)
                     tasks.clear()
 
-                    await self.database.cars_processing(result.values())
+                    await self.database.cars_processing(cars=list(result.values()))
 
     async def download_photo(self, car):
         car_dir = ROOT_DIR.joinpath(f'encar_{car["id"]}')
@@ -130,7 +130,7 @@ class EncarParser:
                 print(
                     f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
                 )
-                asyncio.sleep(4)
+                await asyncio.sleep(2)
                 attempts -= 1
 
     async def get_cars(self, url, body_type):
