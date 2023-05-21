@@ -9,3 +9,13 @@ services:
     build: ./bobaedream/.
     environment:
       TZ: 'Asia/Almaty'
+  
+  kbchachacha:
+    build: ./kbchachacha/.
+    environment:
+      TZ: 'Asia/Almaty'
+
+networks:
+  default:
+    external:
+      name: traefik
