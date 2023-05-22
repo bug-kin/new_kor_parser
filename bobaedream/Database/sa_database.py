@@ -21,7 +21,6 @@ class Database:
     def __init__(self):
         self.engine = create_async_engine(
             config.connection.engine,
-            pool_recycle=180,
             echo=True,
         )
         self.session = async_sessionmaker(bind=self.engine)
@@ -129,7 +128,9 @@ class Database:
                     )
                 )
                 await session.commit()
+
             except Exception as error:
+                await session.rollback()
                 print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
                 return
  
@@ -174,16 +175,13 @@ class Database:
         )
 
     async def preloading(self):
-        tasks = [
-            create_task(self.get_all_records(table=CarSourceSite, dictionary=self.car_sources)),
-            create_task(self.get_all_records(table=CarBody, dictionary=self.car_bodies)),
-            create_task(self.get_all_records(table=CarMark, dictionary=self.car_marks)),
-            create_task(self.get_all_records(table=CarModel, dictionary=self.car_models)),
-            create_task(self.get_all_records(table=CarTransmission, dictionary=self.car_transmissions)),
-            create_task(self.get_all_records(table=CarGearbox, dictionary=self.car_gearboxes)),
-            create_task(self.get_all_records(table=CarFuelType, dictionary=self.car_fuel_types))
-        ]
-        await gather(*tasks)
+        await self.get_all_records(table=CarSourceSite, dictionary=self.car_sources)
+        await self.get_all_records(table=CarBody, dictionary=self.car_bodies)
+        await self.get_all_records(table=CarMark, dictionary=self.car_marks)
+        await self.get_all_records(table=CarModel, dictionary=self.car_models)
+        await self.get_all_records(table=CarTransmission, dictionary=self.car_transmissions)
+        await self.get_all_records(table=CarGearbox, dictionary=self.car_gearboxes)
+        await self.get_all_records(table=CarFuelType, dictionary=self.car_fuel_types)
 
     async def get_all_records(self, table, dictionary):
         async with self.session() as session:     

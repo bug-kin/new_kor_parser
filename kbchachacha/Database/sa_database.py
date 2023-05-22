@@ -21,7 +21,6 @@ class Database:
     def __init__(self):
         self.engine = create_async_engine(
             config.connection.engine,
-            pool_recycle=180,
             echo=True,
         )
         self.session = async_sessionmaker(bind=self.engine)
@@ -108,26 +107,32 @@ class Database:
                 field='kr_name'
             )
 
-            await session.execute(
-                insert(Cars)
-                .values(
-                    source_site_id=source_id,
-                    car_id=car.get('id'),
-                    body_id=body_id,
-                    mark_id=mark_id,
-                    model_id=model_id,
-                    grade_name=car.get('grade'),
-                    year=car.get('year'),
-                    price=car.get('price'),
-                    mileage=car.get('mileage'),
-                    gearbox_id=gearbox_id,
-                    transmission_id=transmission_id,
-                    fuel_type_id=fuel_type_id,
-                    engine_vol=car.get('engine'),
-                    preview=car.get('preview')
+            try:
+                await session.execute(
+                    insert(Cars)
+                    .values(
+                        source_site_id=source_id,
+                        car_id=car.get('id'),
+                        body_id=body_id,
+                        mark_id=mark_id,
+                        model_id=model_id,
+                        grade_name=car.get('grade'),
+                        year=car.get('year'),
+                        price=car.get('price'),
+                        mileage=car.get('mileage'),
+                        gearbox_id=gearbox_id,
+                        transmission_id=transmission_id,
+                        fuel_type_id=fuel_type_id,
+                        engine_vol=car.get('engine'),
+                        preview=car.get('preview')
+                    )
                 )
-            )
-            await session.commit()
+                await session.commit()
+
+            except Exception as error:
+                await session.rollback()
+                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+                return
 
     async def get_or_create_record(self, target, dictionary, table, field):
         if not target:
@@ -170,16 +175,13 @@ class Database:
         )
 
     async def preloading(self):
-        tasks = [
-            create_task(self.get_all_records(table=CarSourceSite, dictionary=self.car_sources)),
-            create_task(self.get_all_records(table=CarBody, dictionary=self.car_bodies)),
-            create_task(self.get_all_records(table=CarMark, dictionary=self.car_marks)),
-            create_task(self.get_all_records(table=CarModel, dictionary=self.car_models)),
-            create_task(self.get_all_records(table=CarTransmission, dictionary=self.car_transmissions)),
-            create_task(self.get_all_records(table=CarGearbox, dictionary=self.car_gearboxes)),
-            create_task(self.get_all_records(table=CarFuelType, dictionary=self.car_fuel_types))
-        ]
-        await gather(*tasks)
+        await self.get_all_records(table=CarSourceSite, dictionary=self.car_sources)
+        await self.get_all_records(table=CarBody, dictionary=self.car_bodies)
+        await self.get_all_records(table=CarMark, dictionary=self.car_marks)
+        await self.get_all_records(table=CarModel, dictionary=self.car_models)
+        await self.get_all_records(table=CarTransmission, dictionary=self.car_transmissions)
+        await self.get_all_records(table=CarGearbox, dictionary=self.car_gearboxes)
+        await self.get_all_records(table=CarFuelType, dictionary=self.car_fuel_types)
 
     async def get_all_records(self, table, dictionary):
         async with self.session() as session:     
