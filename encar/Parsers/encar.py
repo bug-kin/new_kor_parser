@@ -123,7 +123,7 @@ class EncarParser:
                         car["preview"] = str(path_to_photo)
                         return
 
-            except ClientPayloadError as error:
+            except Exception as error:
                 if attempts == 0:
                     break
 

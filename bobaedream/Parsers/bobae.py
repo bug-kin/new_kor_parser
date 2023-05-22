@@ -166,13 +166,26 @@ class BobaParser:
         else:
             url = 'https:' + string.replace('_s1', '')
 
-        async with self.request_dispatcher.get(url) as resp:
-            if resp.ok:
-                path_to_photo = car_dir.joinpath(Path(url).name)
-                async with aiofiles.open(path_to_photo, 'wb') as f:
-                    await f.write(await resp.read())
+        attempts = 2
+        while True:
+            try:
+                async with self.request_dispatcher.get(url) as resp:
+                    if resp.ok:
+                        path_to_photo = car_dir.joinpath(Path(url).name)
+                        async with aiofiles.open(path_to_photo, 'wb') as f:
+                            await f.write(await resp.read())
 
-                return str(path_to_photo)
+                        return str(path_to_photo)
+
+            except Exception as error:
+                    if attempts == 0:
+                        return None
+
+                    print(
+                        f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
+                    )
+                    await asyncio.sleep(3)
+                    attempts -= 1
 
     async def extract_mark_model_grade(self, string):
         return tuple(
