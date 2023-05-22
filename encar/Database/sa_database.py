@@ -50,89 +50,101 @@ class Database:
         await gather(*batch)
         batch.clear()
 
+        await self.engine.dispose()
+
     async def process_car(self, car):
-        async with self.session() as session:
-            source_id = self.car_sources.get(car.get("source"))
-            res = await session.execute(
-                select(Cars.id)
-                .where(
-                    Cars.source_site_id==source_id,
-                    Cars.car_id==car.get('id')
-                )
+        session = self.session()
+        source_id = self.car_sources.get(car.get("source"))
+        res = await session.execute(
+            select(Cars.id)
+            .where(
+                Cars.source_site_id==source_id,
+                Cars.car_id==car.get('id')
             )
-            record_id = res.scalar_one_or_none()
-            if record_id:
+        )
+        record_id = res.scalar_one_or_none()
+        if record_id:
+            try:
                 await session.execute(
                     update(Cars)
                     .where(Cars.id==record_id)
                     .values(deleted_at=None)
                 )
                 await session.commit()
-                return
-
-            body_id = await self.get_or_create_record(
-                target=car.get('body_type'),
-                dictionary=self.car_bodies,
-                table=CarBody,
-                field='kr_name',
-            )
-            mark_id = await self.get_or_create_record(
-                target=car.get('mark'),
-                dictionary=self.car_marks,
-                table=CarMark,
-                field='kr_name',
-            ),
-            model_id = await self.get_or_create_record(
-                target=car.get('model'),
-                dictionary=self.car_models,
-                table=CarModel,
-                field='kr_name',
-            )
-            transmission_id = await self.get_or_create_record(
-                target=car.get('transmission'),
-                dictionary=self.car_transmissions,
-                table=CarTransmission,
-                field='name',
-            )
-            gearbox_id = await self.get_or_create_record(
-                target=car.get('gearbox'),
-                dictionary=self.car_gearboxes,
-                table=CarGearbox,
-                field='kr_name'
-            )
-            fuel_type_id = await self.get_or_create_record(
-                target=car.get('fuel'),
-                dictionary=self.car_fuel_types,
-                table=CarFuelType,
-                field='kr_name'
-            )
-
-            try:
-                await session.execute(
-                    insert(Cars)
-                    .values(
-                        source_site_id=source_id,
-                        car_id=car.get('id'),
-                        body_id=body_id,
-                        mark_id=mark_id,
-                        model_id=model_id,
-                        grade_name=car.get('grade'),
-                        year=car.get('year'),
-                        price=car.get('price'),
-                        mileage=car.get('mileage'),
-                        gearbox_id=gearbox_id,
-                        transmission_id=transmission_id,
-                        fuel_type_id=fuel_type_id,
-                        engine_vol=car.get('engine'),
-                        preview=car.get('preview')
-                    )
-                )
-                await session.commit()
 
             except Exception as error:
                 await session.rollback()
                 print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+
+            finally:
+                await session.close()
                 return
+
+        body_id = await self.get_or_create_record(
+            target=car.get('body_type'),
+            dictionary=self.car_bodies,
+            table=CarBody,
+            field='kr_name',
+        )
+        mark_id = await self.get_or_create_record(
+            target=car.get('mark'),
+            dictionary=self.car_marks,
+            table=CarMark,
+            field='kr_name',
+        ),
+        model_id = await self.get_or_create_record(
+            target=car.get('model'),
+            dictionary=self.car_models,
+            table=CarModel,
+            field='kr_name',
+        )
+        transmission_id = await self.get_or_create_record(
+            target=car.get('transmission'),
+            dictionary=self.car_transmissions,
+            table=CarTransmission,
+            field='name',
+        )
+        gearbox_id = await self.get_or_create_record(
+            target=car.get('gearbox'),
+            dictionary=self.car_gearboxes,
+            table=CarGearbox,
+            field='kr_name'
+        )
+        fuel_type_id = await self.get_or_create_record(
+            target=car.get('fuel'),
+            dictionary=self.car_fuel_types,
+            table=CarFuelType,
+            field='kr_name'
+        )
+
+        try:
+            await session.execute(
+                insert(Cars)
+                .values(
+                    source_site_id=source_id,
+                    car_id=car.get('id'),
+                    body_id=body_id,
+                    mark_id=mark_id,
+                    model_id=model_id,
+                    grade_name=car.get('grade'),
+                    year=car.get('year'),
+                    price=car.get('price'),
+                    mileage=car.get('mileage'),
+                    gearbox_id=gearbox_id,
+                    transmission_id=transmission_id,
+                    fuel_type_id=fuel_type_id,
+                    engine_vol=car.get('engine'),
+                    preview=car.get('preview')
+                )
+            )
+            await session.commit()
+
+        except Exception as error:
+            await session.rollback()
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+
+        finally:
+            await session.close()
  
     async def get_or_create_record(self, target, dictionary, table, field):
         if not target:
@@ -147,10 +159,17 @@ class Database:
             await self.get_all_records(table=table, dictionary=dictionary)
 
     async def creating_record(self, table, val_dict):
-        async with self.session() as session:
+        session = self.session()
+        try:
             await session.execute(insert(table).values(val_dict))
             await session.commit()
-
+        except Exception as error:
+            await session.rollback()
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+        
+        finally:
+            await session.close()
+        
     async def update_for_delete_flag(self, source, body_type):
         source_id = self.car_sources.get(source)
         body_id = await self.get_or_create_record(
@@ -159,7 +178,8 @@ class Database:
             table=CarBody,
             field='kr_name',
         )
-        async with self.session() as session:
+        session = self.session()
+        try:
             await session.execute(
                 update(Cars)
                 .where(
@@ -169,10 +189,16 @@ class Database:
                 .values(deleted_at=datetime.now().date())
             )
             await session.commit()
+            print(
+                f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATING ] The date is set for the deleted_at field for the body {body_type}.'
+            )
+
+        except Exception as error:
+            await session.rollback()
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
         
-        print(
-            f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATING ] The date is set for the deleted_at field for the body {body_type}.'
-        )
+        finally:
+            await session.close()
 
     async def preloading(self):
         await self.get_all_records(table=CarSourceSite, dictionary=self.car_sources)
@@ -184,7 +210,8 @@ class Database:
         await self.get_all_records(table=CarFuelType, dictionary=self.car_fuel_types)
 
     async def get_all_records(self, table, dictionary):
-        async with self.session() as session:     
+        session = self.session()
+        try:     
             res = await session.execute(select(table))
             for rec in res.scalars():
                 if hasattr(table, 'site'):
@@ -195,3 +222,13 @@ class Database:
                 
                 if hasattr(table, 'kr_name'):
                     dictionary[rec.kr_name] = rec.id
+            
+            await session.commit()
+
+        except Exception as error:
+            await session.rollback()
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+        
+        finally:
+            await session.close()
+            
