@@ -12,7 +12,8 @@ class Sftp:
             host=config.sftp.host,
             port=config.sftp.port,
             username=config.sftp.user,
-            password=config.sftp.password
+            password=config.sftp.password,
+            known_hosts=None
         )
         self.root_dir = Path('share')
 
