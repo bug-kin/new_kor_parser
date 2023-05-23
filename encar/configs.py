@@ -6,16 +6,16 @@ class Proxy:
 
 
 class MySQLConnection:
-    host = "favorite-motors.kz"
+    host = "mysql"
     user = "homestead"
     password = "xHQSMObK502iqzGfVTKQ"
     database = "homestead"
-    engine = f"mysql+aiomysql://{user}:{password}@{host}/{database}"
+    engine = f"mysql+aiomysql://{user}:{password}@{host}:3306/{database}"
 
 
 class SftpConnection:
-    host = "favorite-motors.kz"
-    port = 708
+    host = "sftp"
+    port = 22
     user = "sftp"
     password = "QXgxbjGdYp9qQra6nek2"
 
