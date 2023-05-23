@@ -8,6 +8,7 @@ from Utils.proxy_dispatcher import ProxyDispatcher
 from Utils.request_dispatcher import RequestDispatcher
 from Database.sa_database import Database
 
+
 async def main():
     proxy_dispatcher = ProxyDispatcher()
     async with ClientSession() as session:

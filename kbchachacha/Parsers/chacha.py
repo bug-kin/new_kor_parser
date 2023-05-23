@@ -6,6 +6,7 @@ from pathlib import Path
 
 import aiofiles
 from bs4 import BeautifulSoup
+from Utils.sftp_dispatcher import Sftp
 
 ROOT_DIR = Path("car_images")
 ROOT_DIR.mkdir(exist_ok=True)
@@ -110,7 +111,9 @@ class ChachaParser:
                         async with aiofiles.open(path_to_photo, "wb") as f:
                             await f.write(await resp.read())
 
-                        return str(path_to_photo)
+                        sftp = Sftp()
+                        path_to_photo = await sftp.upload(path_to_photo)
+                        return path_to_photo
 
             except Exception as error:
                 if attempts == 0:
