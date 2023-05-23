@@ -20,7 +20,7 @@ from Database.schema import (
 class Database:
     def __init__(self):
         self.engine = create_async_engine(
-            config.connection.engine,
+            config.db.engine,
             echo=True,
         )
         self.session = async_sessionmaker(bind=self.engine)
@@ -39,16 +39,8 @@ class Database:
         await self.preloading()
         await self.update_for_delete_flag(cars[0].get('source'), cars[0].get('body_type'))
 
-        batch = []
         for car in cars:
-            if len(batch) == 10:
-                await gather(*batch)
-                batch.clear()
-            
-            batch.append(create_task(self.process_car(car)))
-        
-        await gather(*batch)
-        batch.clear()
+            await self.process_car(car)
 
         await self.engine.dispose()
 
@@ -58,8 +50,8 @@ class Database:
         res = await session.execute(
             select(Cars.id)
             .where(
-                Cars.source_site_id==source_id,
-                Cars.car_id==car.get('id')
+                Cars.source_site_id == source_id,
+                Cars.car_id == car.get('id')
             )
         )
         record_id = res.scalar_one_or_none()
@@ -67,8 +59,16 @@ class Database:
             try:
                 await session.execute(
                     update(Cars)
-                    .where(Cars.id==record_id)
-                    .values(deleted_at=None)
+                    .where(Cars.id == record_id)
+                    .values(
+                        grade_name=car.get('grade'),
+                        year=car.get('year'),
+                        price=car.get('price'),
+                        mileage=car.get('mileage'),
+                        engine_vol=car.get('engine'),
+                        preview=car.get('preview'),
+                        deleted_at=None
+                    )
                 )
                 await session.commit()
 
@@ -145,7 +145,7 @@ class Database:
 
         finally:
             await session.close()
- 
+
     async def get_or_create_record(self, target, dictionary, table, field):
         if not target:
             return None
@@ -166,10 +166,10 @@ class Database:
         except Exception as error:
             await session.rollback()
             print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
-        
+
         finally:
             await session.close()
-        
+
     async def update_for_delete_flag(self, source, body_type):
         source_id = self.car_sources.get(source)
         body_id = await self.get_or_create_record(
@@ -183,8 +183,8 @@ class Database:
             await session.execute(
                 update(Cars)
                 .where(
-                    Cars.source_site_id==source_id,
-                    Cars.body_id==body_id
+                    Cars.source_site_id == source_id,
+                    Cars.body_id == body_id
                 )
                 .values(deleted_at=datetime.now().date())
             )
@@ -196,7 +196,7 @@ class Database:
         except Exception as error:
             await session.rollback()
             print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
-        
+
         finally:
             await session.close()
 
@@ -211,24 +211,23 @@ class Database:
 
     async def get_all_records(self, table, dictionary):
         session = self.session()
-        try:     
+        try:
             res = await session.execute(select(table))
             for rec in res.scalars():
                 if hasattr(table, 'site'):
                     dictionary[rec.site] = rec.id
-                
+
                 if hasattr(table, 'name'):
                     dictionary[rec.name] = rec.id
-                
+
                 if hasattr(table, 'kr_name'):
                     dictionary[rec.kr_name] = rec.id
-            
+
             await session.commit()
 
         except Exception as error:
             await session.rollback()
             print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
-        
+
         finally:
             await session.close()
-            

@@ -7,6 +7,8 @@ from pathlib import Path
 import aiofiles
 from bs4 import BeautifulSoup
 
+from Utils.sftp_dispatcher import Sftp
+
 ROOT_DIR = Path('car_images')
 ROOT_DIR.mkdir(exist_ok=True)
 
@@ -175,17 +177,19 @@ class BobaParser:
                         async with aiofiles.open(path_to_photo, 'wb') as f:
                             await f.write(await resp.read())
 
-                        return str(path_to_photo)
+                        sftp = Sftp()
+                        path_to_photo = await sftp.upload(path_to_photo)
+                        return path_to_photo
 
             except Exception as error:
-                    if attempts == 0:
-                        return None
+                if attempts == 0:
+                    return None
 
-                    print(
-                        f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
-                    )
-                    await asyncio.sleep(3)
-                    attempts -= 1
+                print(
+                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
+                )
+                await asyncio.sleep(3)
+                attempts -= 1
 
     async def extract_mark_model_grade(self, string):
         return tuple(
