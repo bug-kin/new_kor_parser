@@ -1,4 +1,4 @@
-version: '3.10'
+version: '3'
 services:
   encar:
     build: ./encar/.
@@ -9,13 +9,13 @@ services:
     build: ./bobaedream/.
     environment:
       TZ: 'Asia/Almaty'
-  
+
   kbchachacha:
     build: ./kbchachacha/.
     environment:
       TZ: 'Asia/Almaty'
 
-# networks:
-#   default:
-#     external:
-#       name: traefik
+networks:
+  default:
+    external:
+      name: traefik
