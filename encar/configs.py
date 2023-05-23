@@ -5,18 +5,26 @@ class Proxy:
     token = "9x3njmq5gcnpz8kg7hrugb5ciqkrmm8u68c7s9y6"
 
 
-class Connection:
-    host = "pepe.foundation"
+class MySQLConnection:
+    host = "favorite-motors.kz"
     user = "homestead"
-    password = "homestead"
+    password = "xHQSMObK502iqzGfVTKQ"
     database = "homestead"
     engine = f"mysql+aiomysql://{user}:{password}@{host}/{database}"
+
+
+class SftpConnection:
+    host = "favorite-motors.kz"
+    port = 708
+    user = "sftp"
+    password = "QXgxbjGdYp9qQra6nek2"
 
 
 class Configuration:
     source = "encar"
     proxy = Proxy()
-    connection = Connection()
+    db = MySQLConnection()
+    sftp = SftpConnection()
 
 
 config = Configuration()

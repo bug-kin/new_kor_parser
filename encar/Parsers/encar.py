@@ -5,7 +5,7 @@ from math import ceil
 from pathlib import Path
 
 import aiofiles
-from aiohttp import ClientPayloadError
+from Utils.sftp_dispatcher import Sftp
 
 ROOT_DIR = Path("car_images")
 ROOT_DIR.mkdir(exist_ok=True)
@@ -120,6 +120,8 @@ class EncarParser:
                         async with aiofiles.open(path_to_photo, "wb") as f:
                             await f.write(await resp.read())
 
+                        sftp = Sftp()
+                        path_to_photo = await sftp.upload(path_to_photo)
                         car["preview"] = str(path_to_photo)
                         return
 
