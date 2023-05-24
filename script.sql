@@ -1,3 +1,15 @@
+drop table if exists car_options;
+drop table if exists cars;
+drop table if exists car_option;
+drop table if exists car_color;
+drop table if exists car_fuel_type;
+drop table if exists car_transmission;
+drop table if exists car_gearbox;
+drop table if exists car_model;
+drop table if exists car_mark;
+drop table if exists car_body;
+
+
 create table if not exists car_source_site (
     id tinyint unsigned primary key auto_increment,
     site varchar(20) not null unique,
@@ -5,7 +17,7 @@ create table if not exists car_source_site (
     updated_at timestamp default now()
 ) COMMENT='Таблица, которая хранит наименование источника.';
 
-INSERT INTO car_source_site (site) VALUES 
+INSERT INTO car_source_site (site) VALUES
 ('bobaedream'),
 ('encar'),
 ('kbchachacha');
