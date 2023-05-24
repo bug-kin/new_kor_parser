@@ -126,12 +126,12 @@ class EncarParser:
                         return
 
             except Exception as error:
+                print(
+                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
+                )
                 if attempts == 0:
                     break
 
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
-                )
                 await asyncio.sleep(2)
                 attempts -= 1
 

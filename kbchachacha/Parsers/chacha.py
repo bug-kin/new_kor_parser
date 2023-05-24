@@ -61,43 +61,57 @@ class ChachaParser:
                     await self.database.cars_processing(list(cars.values()))
 
     async def parse_car(self, car):
-        async with self.request_dispatcher.post(
-            self.JSON_URL.format(car_id=car["id"])
-        ) as resp:
-            if resp.ok:
-                json = await resp.json()
-                if not json["list"]:
-                    print(
-                        f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ SOLD ] Car {car["id"]} sold out.'
-                    )
+        attempts = 2
+        while True:
+            try:
+                async with self.request_dispatcher.post(
+                    self.JSON_URL.format(car_id=car["id"])
+                ) as resp:
+                    if resp.ok:
+                        json = await resp.json()
+                        if not json["list"]:
+                            print(
+                                f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ SOLD ] Car {car["id"]} sold out.'
+                            )
+                            car["deleted_at"] = True
+                            return
+
+                        json = json["list"][0]
+                        car["mark"] = json["makerName"]
+                        car["model"] = json["className"]
+                        car["grade"] = f'{json["modelName"]} {json["gradeName"]}'.strip()
+                        car["gearbox"] = None
+                        car["preview"] = await self.download_photo(
+                            car.get("preview"), car["id"]
+                        )
+
+                        if match := re.search(
+                            "(?P<transmission>AWD|RWD|FWD|2WD|4WD)", car["grade"]
+                        ):
+                            car["transmission"] = match.group("transmission")
+                        else:
+                            car["transmission"] = None
+
+                        if match := re.search(r"(?P<vol>\d{1,2}\.\d{1})", car["grade"]):
+                            car["engine"] = int(float(match.group("vol")) * 1_000)
+                        else:
+                            car["engine"] = None
+
+                        car["year"] = int(json["yymm"])
+                        car["fuel"] = None
+                        car["mileage"] = json["km"]
+                        car["price"] = json["sellAmt"] * 10_000
+
+            except Exception as error:
+                print(
+                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
+                )
+                if attempts == 0:
                     car["deleted_at"] = True
                     return
 
-                json = json["list"][0]
-                car["mark"] = json["makerName"]
-                car["model"] = json["className"]
-                car["grade"] = f'{json["modelName"]} {json["gradeName"]}'.strip()
-                car["gearbox"] = None
-                car["preview"] = await self.download_photo(
-                    car.get("preview"), car["id"]
-                )
-
-                if match := re.search(
-                    "(?P<transmission>AWD|RWD|FWD|2WD|4WD)", car["grade"]
-                ):
-                    car["transmission"] = match.group("transmission")
-                else:
-                    car["transmission"] = None
-
-                if match := re.search(r"(?P<vol>\d{1,2}\.\d{1})", car["grade"]):
-                    car["engine"] = int(float(match.group("vol")) * 1_000)
-                else:
-                    car["engine"] = None
-
-                car["year"] = int(json["yymm"])
-                car["fuel"] = None
-                car["mileage"] = json["km"]
-                car["price"] = json["sellAmt"] * 10_000
+                await asyncio.sleep(2)
+                attempts -= 1
 
     async def download_photo(self, url, car_id):
         car_dir = ROOT_DIR.joinpath(f"kbchachacha_{car_id}")
@@ -116,13 +130,13 @@ class ChachaParser:
                         return path_to_photo
 
             except Exception as error:
+                print(
+                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
+                )
                 if attempts == 0:
                     return None
 
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
-                )
-                await asyncio.sleep(3)
+                await asyncio.sleep(2)
                 attempts -= 1
 
     async def parse_cars_for_category(self, filter, code, name):

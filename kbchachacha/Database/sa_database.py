@@ -45,6 +45,9 @@ class Database:
         await self.engine.dispose()
 
     async def process_car(self, car):
+        if car.get('deleted_at'):
+            return
+
         session = self.session()
         source_id = self.car_sources.get(car.get("source"))
         res = await session.execute(
