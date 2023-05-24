@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime
 from time import time
 
 from aiohttp import ClientSession
@@ -18,8 +17,12 @@ async def main():
         database = Database()
 
         parser = EncarParser(request_dispatcher=request_dispatcher, database=database)
-        await parser.parse()
-        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ DONE ] Parsing done')
+        try:
+            await database.update_monitoring(None)
+            await parser.parse()
+            await database.update_monitoring(True)
+        except Exception:
+            await database.update_monitoring(False)
 
 
 if __name__ == "__main__":

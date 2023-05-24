@@ -6,7 +6,7 @@ class Proxy:
 
 
 class MySQLConnection:
-    host = "fm-mysql"
+    host = "mysql"
     user = "homestead"
     password = "xHQSMObK502iqzGfVTKQ"
     database = "homestead"
@@ -14,7 +14,7 @@ class MySQLConnection:
 
 
 class SftpConnection:
-    host = "fm-sftp"
+    host = "sftp"
     port = 22
     user = "sftp"
     password = "QXgxbjGdYp9qQra6nek2"

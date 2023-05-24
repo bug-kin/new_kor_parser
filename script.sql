@@ -10,6 +10,21 @@ drop table if exists car_mark;
 drop table if exists car_body;
 
 
+create table if not exists parser_monitoring (
+	id tinyint unsigned primary key auto_increment,
+	source varchar(20) unique not null,
+	status bool default null,
+	started_at timestamp,
+	parsed_at timestamp,
+	created_at timestamp default now(),
+    updated_at timestamp default now()
+);
+
+insert into parser_monitoring (source) values
+('bobaedream'),
+('encar'),
+('kbchachacha');
+
 create table if not exists car_source_site (
     id tinyint unsigned primary key auto_increment,
     site varchar(20) not null unique,

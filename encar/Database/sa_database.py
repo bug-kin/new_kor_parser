@@ -1,4 +1,3 @@
-from asyncio import create_task, gather
 from datetime import datetime
 
 from sqlalchemy import insert, select, update
@@ -14,6 +13,7 @@ from Database.schema import (
     Cars,
     CarSourceSite,
     CarTransmission,
+    ParserMonitoring
 )
 
 
@@ -31,6 +31,28 @@ class Database:
         self.car_transmissions = dict()
         self.car_gearboxes = dict()
         self.car_fuel_types = dict()
+
+    async def update_monitoring(self, status):
+        session = self.session()
+        try:
+            await session.execute(
+                update(ParserMonitoring)
+                .where(ParserMonitoring.source == config.source)
+                .values(
+                    status=status,
+                    started_at=datetime.now()
+                )
+            )
+            await session.commit()
+
+        except Exception:
+            await session.rollback()
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+
+        finally:
+            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ MONITORING ] Monitoring status updated')
+            await session.close()
+            return
 
     async def cars_processing(self, cars):
         if not cars:

@@ -1,9 +1,21 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, JSON
+from sqlalchemy import Column, DateTime, Integer, String, JSON, Boolean
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
+
+
+class ParserMonitoring(Base):
+    __tablename__ = 'parser_monitoring'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source = Column(String, unique=True, nullable=False)
+    status = Column(Boolean)
+    started_at = Column(DateTime)
+    parsed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
 
 
 class CarSourceSite(Base):
