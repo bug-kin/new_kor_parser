@@ -24,7 +24,7 @@ services:
     volumes:
       - /home/favorite_motors/favorite_motors/public/share:/share/
 
-# networks:
-#   default:
-#     external:
-#       name: traefik
+networks:
+  default:
+    external:
+      name: traefik
