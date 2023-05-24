@@ -5,9 +5,8 @@ from math import ceil
 from pathlib import Path
 
 import aiofiles
-from Utils.sftp_dispatcher import Sftp
 
-ROOT_DIR = Path("car_images")
+ROOT_DIR = Path("share")
 ROOT_DIR.mkdir(exist_ok=True)
 
 
@@ -63,7 +62,7 @@ class EncarParser:
                     async with self.request_dispatcher.get(count_url) as resp:
                         if resp.ok:
                             res = await resp.json()
-                            total, pages = await self.get_total_records_and_pages(
+                            _, pages = await self.get_total_records_and_pages(
                                 res["Count"]
                             )
 
@@ -120,8 +119,6 @@ class EncarParser:
                         async with aiofiles.open(path_to_photo, "wb") as f:
                             await f.write(await resp.read())
 
-                        sftp = Sftp()
-                        path_to_photo = await sftp.upload(path_to_photo)
                         car["preview"] = str(path_to_photo)
                         return
 

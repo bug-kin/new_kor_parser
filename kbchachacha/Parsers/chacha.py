@@ -6,9 +6,8 @@ from pathlib import Path
 
 import aiofiles
 from bs4 import BeautifulSoup
-from Utils.sftp_dispatcher import Sftp
 
-ROOT_DIR = Path("car_images")
+ROOT_DIR = Path("share")
 ROOT_DIR.mkdir(exist_ok=True)
 
 
@@ -101,6 +100,7 @@ class ChachaParser:
                         car["fuel"] = None
                         car["mileage"] = json["km"]
                         car["price"] = json["sellAmt"] * 10_000
+                        return
 
             except Exception as error:
                 print(
@@ -125,18 +125,16 @@ class ChachaParser:
                         async with aiofiles.open(path_to_photo, "wb") as f:
                             await f.write(await resp.read())
 
-                        sftp = Sftp()
-                        path_to_photo = await sftp.upload(path_to_photo)
-                        return path_to_photo
+                        return str(path_to_photo)
 
             except Exception as error:
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
-                )
                 if attempts == 0:
                     return None
 
-                await asyncio.sleep(2)
+                print(
+                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
+                )
+                asyncio.sleep(3)
                 attempts -= 1
 
     async def parse_cars_for_category(self, filter, code, name):

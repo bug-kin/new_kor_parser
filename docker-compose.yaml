@@ -5,17 +5,26 @@ services:
     environment:
       TZ: 'Asia/Almaty'
 
+    volumes:
+      - /home/favorite_motors/favorite_motors/public/share:/share/
+
   bobaedream:
     build: ./bobaedream/.
     environment:
       TZ: 'Asia/Almaty'
+
+    volumes:
+      - /home/favorite_motors/favorite_motors/public/share:/share/
 
   kbchachacha:
     build: ./kbchachacha/.
     environment:
       TZ: 'Asia/Almaty'
 
-networks:
-  default:
-    external:
-      name: traefik
+    volumes:
+      - /home/favorite_motors/favorite_motors/public/share:/share/
+
+# networks:
+#   default:
+#     external:
+#       name: traefik

@@ -7,9 +7,7 @@ from pathlib import Path
 import aiofiles
 from bs4 import BeautifulSoup
 
-from Utils.sftp_dispatcher import Sftp
-
-ROOT_DIR = Path('car_images')
+ROOT_DIR = Path('share')
 ROOT_DIR.mkdir(exist_ok=True)
 
 
@@ -134,7 +132,7 @@ class BobaParser:
             .find('div', class_='mode-cell thumb')
             .find('img')['src'],
             cardir
-        )  if html.find('div', class_='mode-cell thumb').find('img') else None
+        ) if html.find('div', class_='mode-cell thumb').find('img') else None
 
         car['body_type'] = self.body
         car['mark'], car['model'], *car['grade'] = await self.extract_mark_model_grade(
@@ -177,9 +175,7 @@ class BobaParser:
                         async with aiofiles.open(path_to_photo, 'wb') as f:
                             await f.write(await resp.read())
 
-                        sftp = Sftp()
-                        path_to_photo = await sftp.upload(path_to_photo)
-                        return path_to_photo
+                        return str(path_to_photo)
 
             except Exception as error:
                 print(

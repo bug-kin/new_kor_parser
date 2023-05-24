@@ -13,18 +13,10 @@ class MySQLConnection:
     engine = f"mysql+aiomysql://{user}:{password}@{host}:3306/{database}"
 
 
-class SftpConnection:
-    host = "sftp"
-    port = 22
-    user = "sftp"
-    password = "QXgxbjGdYp9qQra6nek2"
-
-
 class Configuration:
     source = "bobaedream"
     proxy = Proxy()
     db = MySQLConnection()
-    sftp = SftpConnection()
 
 
 config = Configuration()
