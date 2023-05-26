@@ -124,7 +124,7 @@ class EncarParser:
 
             except Exception as error:
                 print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
+                    f'{await self.time()} - [ ERROR ] {error}'
                 )
                 if attempts == 0:
                     break
@@ -208,6 +208,12 @@ class EncarParser:
 
                 return result
 
+    async def get_total_records_and_pages(self, total):
+        print(
+            f'{await self.time()} - [ PAGES ] {ceil(total / 299)} - [ TOTAL ] {total}'
+        )
+        return total, ceil(total / 299)
+
     @staticmethod
     async def extract_engine_volume(badge):
         if not badge:
@@ -236,8 +242,5 @@ class EncarParser:
             return f'http://ci.encar.com/carpicture{photo[0]["location"]}'
 
     @staticmethod
-    async def get_total_records_and_pages(total):
-        print(
-            f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ PAGES ] {ceil(total / 299)} - [ TOTAL ] {total}'
-        )
-        return total, ceil(total / 299)
+    async def time():
+        return datetime.now().strftime("%d-%m-%Y %H:%M:%S")

@@ -70,7 +70,7 @@ class ChachaParser:
                         json = await resp.json()
                         if not json["list"]:
                             print(
-                                f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ SOLD ] Car {car["id"]} sold out.'
+                                f'{await self.time()} - [ SOLD ] Car {car["id"]} sold out.'
                             )
                             car["deleted_at"] = True
                             return
@@ -103,9 +103,7 @@ class ChachaParser:
                         return
 
             except Exception as error:
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
-                )
+                print(f'{await self.time()} - [ ERROR ] {error}')
                 if attempts == 0:
                     car["deleted_at"] = True
                     return
@@ -131,10 +129,8 @@ class ChachaParser:
                 if attempts == 0:
                     return None
 
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error} - [ FILE ] {str(path_to_photo)}'
-                )
-                asyncio.sleep(3)
+                print(f'{await self.time()} - [ ERROR ] {error}')
+                await asyncio.sleep(3)
                 attempts -= 1
 
     async def parse_cars_for_category(self, filter, code, name):
@@ -174,17 +170,17 @@ class ChachaParser:
                     for car in general_cars.find_all("div", class_="area")
                 }
         except AttributeError as error:
-            print(
-                f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ATTRIBUTE ERROR ] {error}'
-            )
+            print(f'{await self.time()} - [ ATTRIBUTE ERROR ] {error}')
             return None
 
     async def calculate_pages(self, total):
         pages = ceil(total / 50)
-        if pages > 90:
-            pages = 90
+        if pages > 60:
+            pages = 60
 
-        print(
-            f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ TOTAL PAGES ] {pages}'
-        )
+        print(f'{await self.time()} - [ TOTAL PAGES ] {pages}')
         return pages
+
+    @staticmethod
+    async def time():
+        return datetime.now().strftime("%d-%m-%Y %H:%M:%S")

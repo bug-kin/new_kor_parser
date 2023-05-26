@@ -36,16 +36,6 @@ class BobaParser:
         '트럭/화물',
         '해치백'
     )
-    INCORRECT_WORDS = ('더', '뉴', '어메이징', '올', '디')
-    TRANSMISSIONS = {
-        'MR': 'RWD',
-        'FR': 'RWD',
-        'RR': 'RWD',
-        'FF': 'FWD',
-        '4WD': '4WD',
-        '2WD': '2WD',
-        'AWD': 'AWD',
-    }
 
     def __init__(self, request_dispatcher, database):
         self.request_dispatcher = request_dispatcher
@@ -122,7 +112,7 @@ class BobaParser:
             html.find('p', class_='tit').find('a')['href']
         ).group('carid'))
 
-        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - Parsing car: [ {car["id"]} ]')
+        print(f'{await self.time()} - Parsing car: [ {car["id"]} ]')
 
         cardir = ROOT_DIR.joinpath(f'bobaedream_{car["id"]}')
         cardir.mkdir(parents=True, exist_ok=True)
@@ -178,41 +168,50 @@ class BobaParser:
                         return str(path_to_photo)
 
             except Exception as error:
-                print(
-                    f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}'
-                )
+                print(f'{await self.time()} - [ ERROR ] {error}')
                 if attempts == 0:
                     return None
 
                 await asyncio.sleep(3)
                 attempts -= 1
 
-    async def extract_mark_model_grade(self, string):
-        return tuple(
-            word
-            for word in string.strip().split(' ')
-            if word not in self.INCORRECT_WORDS
-        )
-
-    async def extract_transmission(self, string):
-        if string := re.search(r'FF|FR|MR|RR|2WD|4WD|AWD', string):
-            return self.TRANSMISSIONS[string.group(0)]
-
-    @staticmethod
-    async def extract_price(string):
-        if price := re.fullmatch('\d+만원', string.strip().replace(',', '')):
-            return int(re.sub(r'만원', '0000', price.group(0)))
-
-    @staticmethod
-    async def get_total_records_and_pages(html):
+    async def get_total_records_and_pages(self, html):
         total = int(
             html.find('span', id='tot').text
             .replace(",", "")
             .replace(".", "")
         )
         pages = ceil(total / 40)
-        print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ PAGES ] {pages} - [ TOTAL ] {total}')
+        print(f'{await self.time()} - [ PAGES ] {pages} - [ TOTAL ] {total}')
         return total, pages
+
+    @staticmethod
+    async def extract_mark_model_grade(string):
+        INCORRECT_WORDS = ('더', '뉴', '어메이징', '올', '디')
+        return tuple(
+            word
+            for word in string.strip().split(' ')
+            if word not in INCORRECT_WORDS
+        )
+
+    @staticmethod
+    async def extract_transmission(string):
+        TRANSMISSIONS = {
+            'MR': 'RWD',
+            'FR': 'RWD',
+            'RR': 'RWD',
+            'FF': 'FWD',
+            '4WD': '4WD',
+            '2WD': '2WD',
+            'AWD': 'AWD',
+        }
+        if string := re.search(r'FF|FR|MR|RR|2WD|4WD|AWD', string):
+            return TRANSMISSIONS[string.group(0)]
+
+    @staticmethod
+    async def extract_price(string):
+        if price := re.fullmatch('\d+만원', string.strip().replace(',', '')):
+            return int(re.sub(r'만원', '0000', price.group(0)))
 
     @staticmethod
     async def extract_year(string):
@@ -245,3 +244,7 @@ class BobaParser:
             return int(mileage.replace('km', ''))
         except ValueError:
             return 0
+
+    @staticmethod
+    async def time():
+        return datetime.now().strftime("%d-%m-%Y %H:%M:%S")

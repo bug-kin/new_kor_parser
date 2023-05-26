@@ -1,7 +1,13 @@
 version: '3'
 services:
   encar:
-    build: ./encar/.
+    build:
+      context: encar/
+      dockerfile: 'Dockerfile'
+
+    env_file:
+      - 'parser.env'
+
     environment:
       TZ: 'Asia/Almaty'
 
@@ -9,7 +15,13 @@ services:
       - /home/favorite_motors/favorite_motors/public/share:/share/
 
   bobaedream:
-    build: ./bobaedream/.
+    build:
+      context: bobaedream/
+      dockerfile: 'Dockerfile'
+
+    env_file:
+      - 'parser.env'
+
     environment:
       TZ: 'Asia/Almaty'
 
@@ -17,7 +29,13 @@ services:
       - /home/favorite_motors/favorite_motors/public/share:/share/
 
   kbchachacha:
-    build: ./kbchachacha/.
+    build:
+      context: kbchachacha/
+      dockerfile: 'Dockerfile'
+
+    env_file:
+      - 'parser.env'
+
     environment:
       TZ: 'Asia/Almaty'
 

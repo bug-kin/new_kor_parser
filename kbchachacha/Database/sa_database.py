@@ -34,23 +34,37 @@ class Database:
 
     async def update_monitoring(self, status):
         session = self.session()
+        stmt = (
+            update(ParserMonitoring).
+            where(ParserMonitoring.source == config.source)
+        )
         try:
-            await session.execute(
-                update(ParserMonitoring)
-                .where(ParserMonitoring.source == config.source)
-                .values(
-                    status=status,
-                    started_at=datetime.now()
+            if status:
+                await session.execute(
+                    stmt.values(status=status, parsed_at=datetime.now())
                 )
-            )
+            elif status is False:
+                await session.execute(
+                    stmt.values(
+                        status=status,
+                    )
+                )
+            else:
+                await session.execute(
+                    stmt.values(
+                        status=status,
+                        started_at=datetime.now()
+                    )
+                )
+
             await session.commit()
 
         except Exception:
             await session.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            print(f'{await self.time()} - [ ERROR ] {error}')
 
         finally:
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ MONITORING ] Monitoring status updated')
+            print(f'{await self.time()} - [ MONITORING ] Status updated')
             await session.close()
             return
 
@@ -59,7 +73,10 @@ class Database:
             return
 
         await self.preloading()
-        await self.update_for_delete_flag(cars[0].get('source'), cars[0].get('body_type'))
+        await self.update_for_delete_flag(
+            cars[0].get('source'),
+            cars[0].get('body_type')
+        )
 
         for car in cars:
             await self.process_car(car)
@@ -99,7 +116,7 @@ class Database:
 
             except Exception as error:
                 await session.rollback()
-                print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+                print(f'{await self.time()} - [ ERROR ] {error}')
 
             finally:
                 await session.close()
@@ -166,7 +183,7 @@ class Database:
 
         except Exception as error:
             await session.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            print(f'{await self.time()} - [ ERROR ] {error}')
 
         finally:
             await session.close()
@@ -190,7 +207,7 @@ class Database:
             await session.commit()
         except Exception as error:
             await session.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            print(f'{await self.time()} - [ ERROR ] {error}')
 
         finally:
             await session.close()
@@ -215,12 +232,12 @@ class Database:
             )
             await session.commit()
             print(
-                f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ UPDATING ] The date is set for the deleted_at field for the body {body_type}.'
+                f'{await self.time()} - [ UPDATING ] The date is set for the deleted_at field for the body {body_type}.'
             )
 
         except Exception as error:
             await session.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            print(f'{await self.time()} - [ ERROR ] {error}')
 
         finally:
             await session.close()
@@ -252,7 +269,11 @@ class Database:
 
         except Exception as error:
             await session.rollback()
-            print(f'{datetime.now().strftime("%d-%m-%Y %H:%M:%S")} - [ ERROR ] {error}')
+            print(f'{await self.time()} - [ ERROR ] {error}')
 
         finally:
             await session.close()
+
+    @staticmethod
+    async def time():
+        return datetime.now().strftime("%d-%m-%Y %H:%M:%S")
