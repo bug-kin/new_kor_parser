@@ -1,20 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import insert, select, update
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
 from configs import config
-from Database.schema import (
-    CarBody,
-    CarFuelType,
-    CarGearbox,
-    CarMark,
-    CarModel,
-    Cars,
-    CarSourceSite,
-    CarTransmission,
-    ParserMonitoring
-)
+from Database.schema import (CarBody, CarFuelType, CarGearbox, CarMark,
+                             CarModel, Cars, CarSourceSite, CarTransmission,
+                             ParserMonitoring)
+from sqlalchemy import insert, select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 class Database:
@@ -59,7 +51,7 @@ class Database:
 
             await session.commit()
 
-        except Exception:
+        except Exception as error:
             await session.rollback()
             print(f'{await self.time()} - [ ERROR ] {error}')
 
@@ -203,8 +195,14 @@ class Database:
     async def creating_record(self, table, val_dict):
         session = self.session()
         try:
-            await session.execute(insert(table).values(val_dict))
+            await session.execute(
+                insert(table).values(val_dict).prefix_with('IGNORE')
+            )
             await session.commit()
+
+        except IntegrityError as error:
+            print(f'{await self.time()} - [ ERROR ] {error}')
+
         except Exception as error:
             await session.rollback()
             print(f'{await self.time()} - [ ERROR ] {error}')
